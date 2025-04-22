@@ -91,7 +91,7 @@ vim.g.mapleader = ' '
 vim.g.maplocalleader = ' '
 
 -- Set to true if you have a Nerd Font installed and selected in the terminal
-vim.g.have_nerd_font = false
+vim.g.have_nerd_font = true
 
 -- [[ Setting options ]]
 -- See `:help vim.opt`
@@ -178,6 +178,13 @@ vim.keymap.set('n', '<leader>q', vim.diagnostic.setloclist, { desc = 'Open diagn
 -- NOTE: This won't work in all terminal emulators/tmux/etc. Try your own mapping
 -- or just use <C-\><C-n> to exit terminal mode
 vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' })
+
+vim.keymap.set('n', '<C-d>', '<C-d>zz', { noremap = true, silent = true })
+vim.keymap.set('n', '<C-u>', '<C-u>zz', { noremap = true, silent = true })
+vim.keymap.set('n', '-', '<CMD>Oil<CR>', { desc = 'Open parent directory' })
+vim.keymap.set('n', '<leader>e', function()
+  vim.diagnostic.open_float(nil, { max_width = 100, noremap = true, silent = true })
+end)
 
 -- TIP: Disable arrow keys in normal mode
 -- vim.keymap.set('n', '<left>', '<cmd>echo "Use h to move!!"<CR>')
@@ -274,6 +281,19 @@ require('lazy').setup({
         changedelete = { text = '~' },
       },
     },
+  },
+
+  {
+    'stevearc/oil.nvim',
+    ---@module 'oil'
+    ---@type oil.SetupOpts
+    opts = {},
+    dependencies = { { 'echasnovski/mini.icons', opts = {} } },
+    lazy = false,
+  },
+
+  {
+    'ThePrimeagen/vim-be-good',
   },
 
   -- NOTE: Plugins can also be configured to run Lua code when they are loaded.
@@ -696,6 +716,8 @@ require('lazy').setup({
             },
           },
         },
+        ts_ls = {},
+        biome = {},
       }
 
       -- Ensure the servers and tools above are installed
@@ -843,7 +865,7 @@ require('lazy').setup({
           -- Accept ([y]es) the completion.
           --  This will auto-import if your LSP supports it.
           --  This will expand snippets if the LSP sent a snippet.
-          ['<C-y>'] = cmp.mapping.confirm { select = true },
+          ['<Enter>'] = cmp.mapping.confirm { select = true },
 
           -- If you prefer more traditional completion keymaps,
           -- you can uncomment the following lines
@@ -898,21 +920,143 @@ require('lazy').setup({
     -- change the command in the config to whatever the name of that colorscheme is.
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
-    'folke/tokyonight.nvim',
+    'nickkadutskyi/jb.nvim',
     priority = 1000, -- Make sure to load this before all the other start plugins.
     config = function()
       ---@diagnostic disable-next-line: missing-fields
-      require('tokyonight').setup {
-        styles = {
-          comments = { italic = false }, -- Disable italics in comments
-        },
+      require('jb').setup {
+        transparent = true,
       }
-
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      vim.cmd.colorscheme 'jb'
     end,
+  },
+
+  {
+    'folke/trouble.nvim',
+    opts = {}, -- for default options, refer to the configuration section for custom setup.
+    cmd = 'Trouble',
+    keys = {
+      {
+        '<leader>xx',
+        '<cmd>Trouble diagnostics toggle<cr>',
+        desc = 'Diagnostics (Trouble)',
+      },
+      {
+        '<leader>xX',
+        '<cmd>Trouble diagnostics toggle filter.buf=0<cr>',
+        desc = 'Buffer Diagnostics (Trouble)',
+      },
+      {
+        '<leader>xs',
+        '<cmd>Trouble symbols toggle focus=false<cr>',
+        desc = 'Symbols (Trouble)',
+      },
+      {
+        '<leader>xl',
+        '<cmd>Trouble lsp toggle focus=false win.position=right<cr>',
+        desc = 'LSP Definitions / references / ... (Trouble)',
+      },
+      {
+        '<leader>xL',
+        '<cmd>Trouble loclist toggle<cr>',
+        desc = 'Location List (Trouble)',
+      },
+      {
+        '<leader>xQ',
+        '<cmd>Trouble qflist toggle<cr>',
+        desc = 'Quickfix List (Trouble)',
+      },
+    },
+  },
+
+  {
+    'nvim-pack/nvim-spectre',
+    event = 'VeryLazy',
+    keys = {
+      -- Replace in project (global search & replace)
+      {
+        '<leader>rp',
+        function()
+          require('spectre').toggle()
+        end,
+        desc = 'Spectre: Replace in Project',
+      },
+
+      -- Replace in current file
+      {
+        '<leader>sp',
+        function()
+          require('spectre').open_file_search { select_word = true }
+        end,
+        desc = 'Spectre: Replace in Current File',
+      },
+
+      -- Replace visual selection
+      {
+        '<leader>rv',
+        function()
+          require('spectre').open_visual()
+        end,
+        mode = 'v',
+        desc = 'Spectre: Replace Selection',
+      },
+
+      -- Replace word under cursor (normal mode only)
+      {
+        '<leader>rw',
+        function()
+          require('spectre').open_visual { select_word = true }
+        end,
+        mode = 'n',
+        desc = 'Spectre: Replace Word Under Cursor',
+      },
+    },
+    config = function()
+      require('spectre').setup {
+        open_cmd = 'vnew',
+        live_update = true,
+        is_insert_mode = true,
+      }
+    end,
+  },
+
+  {
+    'IogaMaster/neocord',
+    event = 'VeryLazy',
+    config = function()
+      require('neocord').setup {}
+    end,
+  },
+
+  { 'wakatime/vim-wakatime', lazy = false },
+
+  {
+    'mistricky/codesnap.nvim',
+    lazy = true,
+    build = 'make',
+    keys = {
+      { '<leader>cc', '<cmd>CodeSnapSave<cr>', mode = 'x', desc = 'Save selected code snapshot' },
+    },
+    opts = {
+      save_path = '~/Pictures',
+      has_breadcrumbs = true,
+      bg_theme = 'grape',
+      watermark = '',
+      title = '',
+    },
+    config = function(_, opts)
+      require('codesnap').setup(opts)
+    end,
+  },
+
+  -- Rust Analyzer
+  {
+    'mrcjkb/rustaceanvim',
+    version = '^6',
+    lazy = false,
   },
 
   -- Highlight todo, notes, etc in comments
@@ -993,7 +1137,7 @@ require('lazy').setup({
   -- require 'kickstart.plugins.debug',
   -- require 'kickstart.plugins.indent_line',
   -- require 'kickstart.plugins.lint',
-  -- require 'kickstart.plugins.autopairs',
+  require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
   -- require 'kickstart.plugins.gitsigns', -- adds gitsigns recommend keymaps
 
